@@ -52,7 +52,8 @@ namespace rshttp {
 		response << "\r\n";
 		response << content;
 		std::string responseStr = response.str();
-		send(cliSock, responseStr.c_str(), responseStr.length(), 0);		
+		send(cliSock, responseStr.c_str(), responseStr.length(), 0);
+		closesocket(cliSock);
 	}
 
 	void Server::route(const std::string& routePath, const std::function<void(SOCKET)>& func) {
