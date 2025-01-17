@@ -44,7 +44,7 @@ namespace rshttp {
 		return content;
 	}
 
-	void Server::returnContent(SOCKET cliSock, const std::string content, const std::string mime) {
+	void Server::returnContent(SOCKET cliSock, const std::string& content, const std::string& mime) {
 		std::stringstream response;
 		response << "HTTP/1.1 200 OK\r\n";
 		response << "Content-Type: " << mime << "; charset=UTF-8\r\n";
@@ -108,7 +108,7 @@ namespace rshttp {
 				continue;
 			}
 			std::thread handleClientTh(handleClient, this, cliSock);
-			handleClientTh.join();
+			handleClientTh.detach();
 		}
 	}
 
