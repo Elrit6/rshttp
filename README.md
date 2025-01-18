@@ -15,7 +15,7 @@ int main() {
       int a = std::stoi(params["a"]);
       int b = std::stoi(params["b"]);
 
-      res.returnContent(svr.getFile("test.html", {
+      res.returnContent(svr.getFile("index.html", {
          {"{a}", std::to_string(a)},
          {"{b}", std::to_string(b)},
          {"{sum}", std::to_string(a + b)},
