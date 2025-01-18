@@ -2,6 +2,70 @@
 
 namespace rshttp {
 
+	Server::Req::Req(const std::string& request) {
+		uint64_t i = 0;
+		while (i < request.size() && request[i] != ' ') {
+			method += request[i];
+			i++;
+		}
+		i++;
+		while (i < request.size() && request[i] != ' ' && request[i] != '?') {
+			uri += request[i];
+			i++;
+		}
+		if (i < request.size() && request[i] == '?') {
+			i++;
+			std::string key, val;
+			bool readingKey = true;
+			while (i < request.size() && request[i] != ' ') {
+				if (request[i] == '=') {
+					readingKey = false;
+				} else if (request[i] == '&') {
+					params[key] = val;
+					key.clear();
+					val.clear();
+					readingKey = true;
+				} else {
+					if (readingKey) {
+						key += request[i];
+					} else {
+						val += request[i];
+					}
+				}
+				i++;
+			}
+			if (!key.empty()) {
+				params[key] = val;
+			}
+		}
+	}
+
+	/*
+	void Server::Req::info() {
+		std::cout 
+			<< std::endl
+			<< "method: " << method << std::endl
+			<< "uri: " << uri << std::endl
+			<< "params: " << std::endl;
+		for (const std::pair<std::string, std::string> param : params) {
+			std::cout << "  " << param.first << ": " << param.second << std::endl;
+		}		
+	}*/
+
+	Server::Res::Res(SOCKET cliSock) : cliSock(cliSock) {};
+
+	void Server::Res::returnContent(const std::string& content, const std::string& mime) {
+		std::stringstream response;
+		response << "HTTP/1.1 " << status << " OK\r\n";
+		response << "Content-Type: " << mime << "; charset=UTF-8\r\n";
+		response << "Content-Length: " << content.size() << "\r\n";
+		response << "\r\n";
+		response << content;
+		std::string responseStr = response.str();
+		send(cliSock, responseStr.c_str(), responseStr.length(), 0);
+		closesocket(cliSock);		
+	}
+
 	Server::Server(const uint16_t port = 8080) : port(port) {
 		if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
 			throw std::runtime_error("Winsock initialization failed.");
@@ -22,6 +86,10 @@ namespace rshttp {
 			WSACleanup();
 			throw std::runtime_error("Binding failed.");
 		}
+	}	
+
+	void Server::route(const std::string& routePath, const std::function<void(SOCKET, Req, Res)>& func) {
+		routes[routePath] = func;
 	}
 
 	std::string Server::getFile(const std::string& filePath, const std::map<std::string, std::string>& variables) {
@@ -44,54 +112,6 @@ namespace rshttp {
 		return content;
 	}
 
-	void Server::returnContent(SOCKET cliSock, const std::string& content, const std::string& mime) {
-		std::stringstream response;
-		response << "HTTP/1.1 200 OK\r\n";
-		response << "Content-Type: " << mime << "; charset=UTF-8\r\n";
-		response << "Content-Length: " << content.size() << "\r\n";
-		response << "\r\n";
-		response << content;
-		std::string responseStr = response.str();
-		send(cliSock, responseStr.c_str(), responseStr.length(), 0);
-		closesocket(cliSock);
-	}
-
-	void Server::route(const std::string& routePath, const std::function<void(SOCKET)>& func) {
-		routes[routePath] = func;
-	}
-
-	std::string Server::getSubPage(const std::string& req) {
-		bool readingPath = false;
-		std::string subPage;
-		for (uint8_t i = 0; req[i] != '\0'; i++) {
-			if (req[i] == ' ' && req[i+1] == '/') {
-				readingPath = true;
-				i++;
-			}
-			if (readingPath) {
-				if (req[i] == ' ' || req[i] == '\0') {
-					break;
-				} else {
-					subPage += req[i];
-				}
-			}
-		}
-		return subPage;		
-	}
-
-	void Server::handleClient(SOCKET cliSock) {
-		char buffer[1024];
-		uint16_t bytesReceived;
-
-		bytesReceived = recv(cliSock, buffer, sizeof(buffer), 0);
-		if (bytesReceived > 0) {
-			buffer[bytesReceived] = '\0';
-			const std::string subPage = getSubPage(buffer);
-			if (routes.find(subPage) != routes.end())
-				routes[subPage](cliSock);
-		}
-	}
-
 	void Server::run() {
 		if (listen(svrSock, SOMAXCONN) == SOCKET_ERROR) {
 			closesocket(svrSock);
@@ -109,6 +129,27 @@ namespace rshttp {
 			}
 			std::thread handleClientTh(handleClient, this, cliSock);
 			handleClientTh.detach();
+		}
+	}
+
+	void Server::handleClient(SOCKET cliSock) {
+		char buffer[1024];
+		uint16_t bytesReceived;
+
+		bytesReceived = recv(cliSock, buffer, sizeof(buffer), 0);
+		if (bytesReceived > 0) {
+			buffer[bytesReceived] = '\0';
+
+			Req req(buffer);
+			Res res(cliSock);
+
+			const std::string uri = req.getUri();
+			if (routes.find(uri) != routes.end()) {
+				routes[uri](cliSock, req, res);
+			} else {
+				res.status = 404;
+				res.returnContent("404 not found", "text/plain");
+			}
 		}
 	}
 
