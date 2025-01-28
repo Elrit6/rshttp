@@ -35,6 +35,7 @@ namespace rshttp {
 			SOCKET cliSock;
 		public:
 			uint16_t status = 200;
+			std::map<std::string, std::string> headers;
 			void returnContent(const std::string& content, const std::string& mime);
 			Res(SOCKET cliSock);
 		};

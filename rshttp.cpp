@@ -59,7 +59,11 @@ namespace rshttp {
 		response << "HTTP/1.1 " << status << " OK\r\n";
 		response << "Content-Type: " << mime << "; charset=UTF-8\r\n";
 		response << "Content-Length: " << content.size() << "\r\n";
+		for (const auto& [headerName, headerValue] : headers) {
+			response << headerName << ": " << headerValue << ";\r\n";
+		}
 		response << "\r\n";
+		//std::cout << response.str() << std::endl;
 		response << content;
 		std::string responseStr = response.str();
 		send(cliSock, responseStr.c_str(), responseStr.length(), 0);
