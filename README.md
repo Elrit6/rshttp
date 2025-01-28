@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # rshttp
 
 Small http server library
