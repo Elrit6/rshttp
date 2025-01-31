@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <inttypes.h>
 #include <map>
 #include <sstream>
 #include <string>
@@ -24,10 +24,12 @@ namespace rshttp {
 			std::string method;
 			std::string uri;
 			std::map<std::string, std::string> params;
+			std::map<std::string, std::string> headers;
 			Req(const std::string& request);
 			inline std::string getMethod() const { return method; };
 			inline std::string getUri() const {return uri; };
 			inline std::map<std::string, std::string> getParams() const { return params; };
+			inline std::map<std::string, std::string> getHeaders() const { return headers; };
 		};
 
 		class Res {
