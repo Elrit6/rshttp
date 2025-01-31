@@ -67,51 +67,6 @@ namespace rshttp {
 				break;
 			}		
 		}
-
-
-	    // Parse Headers
-	    while (i < request.size()) {
-	        std::string headerKey, headerValue;
-
-	        // Read the header name
-	        while (i < request.size() && request[i] != ':' && request[i] != '\r') {
-	            headerKey += request[i];
-	            i++;
-	        }
-
-	        if (i < request.size() && request[i] == ':') {
-	            i++; // Skip ':'
-	        }
-
-	        // Skip whitespace after ':'
-	        while (i < request.size() && (request[i] == ' ' || request[i] == '\t')) {
-	            i++;
-	        }
-
-	        // Read the header value
-	        while (i < request.size() && request[i] != '\r') {
-	            headerValue += request[i];
-	            i++;
-	        }
-
-	        // Store the header if it's valid
-	        if (!headerKey.empty() && !headerValue.empty()) {
-	            headers[headerKey] = headerValue;
-	        }
-
-	        // Skip "\r\n"
-	        if (i + 1 < request.size() && request[i] == '\r' && request[i + 1] == '\n') {
-	            i += 2;
-	        } else {
-	            break; // If there's no CRLF, break out
-	        }
-
-	        // Stop parsing headers if we reach an empty line (end of headers)
-	        if (i + 1 < request.size() && request[i] == '\r' && request[i + 1] == '\n') {
-	            i += 2;
-	            break;
-	        }
-	    }
 	}
 
 	/*
